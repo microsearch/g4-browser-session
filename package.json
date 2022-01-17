@@ -1,0 +1,23 @@
+{
+  "name": "g4-ts-browser-support",
+  "version": "1.5.0",
+  "description": "Browser support tools for g4api-ts module",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "install": "npm run build",
+    "generate": "npm ci; tsc; typedoc src/index.ts"
+  },
+  "keywords": [],
+  "author": "Ferruccio Barletta (ferruccio.barletta@gmail.com)",
+  "license": "",
+  "devDependencies": {
+    "typedoc": "^0.22.4",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "axios": "^0.21.4",
+    "g4api-ts": "github:microsearch/g4api-ts#v1.5.2",
+    "g4api-ts-support": "github:microsearch/g4api-ts-support#v1.5.3"
+  }
+}
