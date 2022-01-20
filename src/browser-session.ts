@@ -1,39 +1,18 @@
+/*
+  G4BrowserSession represents a session maintained entirely in the browser.
+  It is here mainly to support older apps created before the G4 session API
+  existed.
+*/
+
 import * as g4 from "g4api-ts";
 import { G4Api, G4ApiOptions } from "g4api-ts-support";
-
-export { G4UserStatus, G4UserEventType, G4BrowserSession };
 
 // Since session tokens expire in 15 minutes, setting the refresh interval to
 // just under 5 minutes gives us 3 attempts to refresh the session token before
 // we can no longer talk to the server.
 const REFRESH_INTERVAL = 4.75 * 60 * 1000; // ms
 
-enum G4UserStatus {
-  Pending = 0,
-  Active = 1,
-  Inactive = 2,
-  Reset = 3,
-  Validating = 4,
-  Anonymous = 5,
-}
-
-enum G4UserEventType {
-  UserAuthenticated = 0,
-  UserAuthenticationFailure = 1,
-  UserClaimTokens = 2,
-  UserResetTokens = 3,
-  UserClaimTokenVerification = 4,
-  UserResetTokenVerification = 5,
-
-  AdminCreated = 1000,
-  UserCreated = 1001,
-  UserImported = 1002,
-  UserUpdated = 1003,
-  PasswordChanged = 1004,
-  UserArchived = 1005,
-}
-
-class G4BrowserSession extends G4Api {
+export class G4BrowserSession extends G4Api {
   constructor(options: G4ApiOptions) {
     super(options);
     this.localStorageKey = `g4-${options.application ?? "app"}-session`;
