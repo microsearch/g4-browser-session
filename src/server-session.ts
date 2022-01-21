@@ -4,21 +4,42 @@
 */
 
 import * as g4 from "g4api-ts";
-import { G4Api, G4ApiOptions } from "g4api-ts-support";
+import { G4Api, G4ApiOptions, getG4ApiError } from "g4api-ts-support";
 
-export class G4ServerSession extends G4Api {
-  constructor(options: G4ApiOptions) {
-    super(options);
-    this.localStorageKey = `g4-${options.application ?? "app"}-session`;
-    try {
-      if (this.loadSession()) {
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(error.message);
-      }
-      this.authentication = null;
+const getLocalStorageKey = (app?: string) => `g4-${app ?? "app"}-session`;
+
+export function getG4ServerSession(options: G4ApiOptions): G4ServerSession {
+  const localStorageKey = getLocalStorageKey(options.application);
+  const storedSession = window.localStorage.getItem(localStorageKey);
+  if (storedSession === null) {
+    return new G4ServerSession(options);
+  } else {
+    const auth: g4.AuthenticatedSessionResponse = JSON.parse(storedSession);
+    if (auth === null || auth.sessionId === null) {
+      window.localStorage.removeItem(localStorageKey);
+    } else {
+      (async () => {
+        try {
+          const g4api = new G4ServerSession(options);
+          // Make sure the session is still alive on the server before restoring
+          // the session on the browser.
+          await g4api.session.get(auth.sessionId!);
+          options.sessionId = auth.sessionId!;
+        } catch (error: unknown) {
+          window.localStorage.removeItem(localStorageKey);
+          console.error(`getG4ServerSession: ${getG4ApiError(error)}`);
+        }
+      })();
     }
+    return new G4ServerSession(options, auth);
+  }
+}
+
+class G4ServerSession extends G4Api {
+  constructor(options: G4ApiOptions, auth?: g4.AuthenticatedSessionResponse) {
+    super(options);
+    this.localStorageKey = getLocalStorageKey(options.application);
+    this.authentication = auth ? auth : null;
   }
 
   async connect(
@@ -81,18 +102,6 @@ export class G4ServerSession extends G4Api {
       this.authentication = null;
       this.saveSession();
     }
-  }
-
-  private loadSession() {
-    const session = window.localStorage.getItem(this.localStorageKey);
-    if (session === null) {
-      this.authentication = null;
-      window.localStorage.removeItem(this.localStorageKey);
-    } else {
-      this.authentication = JSON.parse(session);
-      this.bearer = this.authentication!.bearer;
-    }
-    return this.connected();
   }
 
   private saveSession() {
