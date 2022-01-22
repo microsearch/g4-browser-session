@@ -1,6 +1,6 @@
 {
   "name": "g4-ts-browser-support",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Browser support tools for g4api-ts module",
   "main": "lib/index.js",
   "scripts": {

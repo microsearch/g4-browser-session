@@ -9,6 +9,7 @@ import { G4Api, G4ApiOptions, getG4ApiError } from "g4api-ts-support";
 const getLocalStorageKey = (app?: string) => `g4-${app ?? "app"}-session`;
 
 export function getG4ServerSession(options: G4ApiOptions): G4ServerSession {
+  options.sessionId = undefined;
   const localStorageKey = getLocalStorageKey(options.application);
   const storedSession = window.localStorage.getItem(localStorageKey);
   if (storedSession === null) {
@@ -18,18 +19,7 @@ export function getG4ServerSession(options: G4ApiOptions): G4ServerSession {
     if (auth === null || auth.sessionId === null) {
       window.localStorage.removeItem(localStorageKey);
     } else {
-      (async () => {
-        try {
-          const g4api = new G4ServerSession(options);
-          // Make sure the session is still alive on the server before restoring
-          // the session on the browser.
-          await g4api.session.get(auth.sessionId!);
-          options.sessionId = auth.sessionId!;
-        } catch (error: unknown) {
-          window.localStorage.removeItem(localStorageKey);
-          console.error(`getG4ServerSession: ${getG4ApiError(error)}`);
-        }
-      })();
+      options.sessionId = auth.sessionId;
     }
     return new G4ServerSession(options, auth);
   }
@@ -70,6 +60,23 @@ class G4ServerSession extends G4Api {
     return (
       this.authentication !== null && this.authentication.sessionId !== null
     );
+  }
+
+  async active(): Promise<boolean> {
+    try {
+      if (this.connected()) {
+        const response = (
+          await this.session.get(this.authentication!.sessionId!)
+        ).data;
+        this.bearer = response.bearer;
+        this.saveSession();
+        return true;
+      }
+    } catch (error: unknown) {
+      this.authentication = null;
+      this.saveSession();
+    }
+    return false;
   }
 
   async refresh() {
